@@ -24,7 +24,7 @@ the online MIPS simulator tools.
 
 Saving Registers
 sort: 
-    addi $sp,$sp, –20 # make room on stack for 5 registers
+    addi $sp,$sp, -20 # make room on stack for 5 registers
     sw $ra, 16($sp)# save $ra on stack
     sw $s3,12($sp) # save $s3 on stack
     sw $s2, 8($sp)# save $s2 on stack
@@ -43,14 +43,15 @@ Outer loop
 
 Inner loop
     addi $s1, $s0, –1#j=i–1
-    for2tst:slti $t0, $s1,0 #reg$t0=1if$s1<0(j<0)
-    bne $t0, $zero, exit2# go to exit2 if $s1 < 0 (j < 0)
-    sll $t1, $s1, 2# reg $t1=j*4
-    add $t2, $s2, $t1# reg $t2 = v + (j * 4)
-    lw $t3, 0($t2)# reg $t3 = v[j]
-    lw $t4, 4($t2)# reg $t4 = v[j + 1]
-    slt $t0, $t4, $t3 # reg $t0 = 0 if $t4 Š $t3
-    beq $t0, $zero, exit2# go to exit2 if $t4 Š $t3
+    for2tst:
+        slti $t0, $s1,0 #reg$t0=1if$s1<0(j<0)
+        bne $t0, $zero, exit2# go to exit2 if $s1 < 0 (j < 0)
+        sll $t1, $s1, 2# reg $t1=j*4
+        add $t2, $s2, $t1# reg $t2 = v + (j * 4)
+        lw $t3, 0($t2)# reg $t3 = v[j]
+        lw $t4, 4($t2)# reg $t4 = v[j + 1]
+        slt $t0, $t4, $t3 # reg $t0 = 0 if $t4 Š $t3
+        beq $t0, $zero, exit2# go to exit2 if $t4 Š $t3
 
 Pass parameters and call
     move $a0, $s2 # 1st parameter of swap is v (old $a0)
@@ -77,8 +78,11 @@ Procedure return
 
 """
 
-
 from MIPS import MIPS
+import argparse
+import sys
+
+
 
 if __name__ == "__main__":
     
@@ -87,8 +91,37 @@ if __name__ == "__main__":
     #      inst_exec works fine almost %90
     #TODO: PC
     #TODO: functions and labels
+    #TODO: addresses must be decimal in order to build the instr
 
     mips = MIPS()
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("-f", "--file", dest="file",help="File name for the assembler")
+    parser.add_argument("-i", "--interactive", dest="interactive", help="Interactive mode",action='store_true')
+
+    args = parser.parse_args()
+
+    if len(sys.argv) < 2:
+        parser.print_usage()
+        sys.exit(0)
+        
+    if args.interactive == True:
+        mips.interactive()
+    else:
+        mips.load_file(args.file)
+        i = mips.inst_build("add $t1 $t2 $t3")
+        i_hex, i_bin = mips.assemble(i)
+        mips.info_memory()
+        #mips.exec_memory()
+        mips.info_registers()
+
+
+        #print "Hex: {}\nBin: {}".format(i_hex, i_bin)
+
+
+
+    """
     mips.register_mem[mips.registers['$t0']] = 0x32 
     mips.register_mem[mips.registers['$t1']] = 0x10
     mips.register_mem[mips.registers['$t2']] = 0xb
@@ -107,7 +140,7 @@ if __name__ == "__main__":
     mips.inst_exec(mips.inst_build("j 0x8192213"))
     mips.info_registers()
     raw_input
-
+    """
 
 
 
@@ -159,7 +192,4 @@ if __name__ == "__main__":
     mips.inst_exec(mips.inst_build("slt $t4 $t0 $t1"))
     mips.info_registers()
     raw_input("continue?")
-
-
-
     """
