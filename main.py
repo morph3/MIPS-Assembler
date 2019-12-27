@@ -1,63 +1,4 @@
 # -*- coding: utf-8 -*-
-
-"""
-
-Saving Registers
-sort: 
-    addi $sp,$sp, -20 # make room on stack for 5 registers
-    sw $ra, 16($sp)# save $ra on stack
-    sw $s3,12($sp) # save $s3 on stack
-    sw $s2, 8($sp)# save $s2 on stack
-    sw $s1, 4($sp)# save $s1 on stack
-    sw $s0, 0($sp)# save $s0 on stack
-
-Procedure body 
-Move parameters 
-    move $s2, $a0 # copy parameter $a0 into $s2 (save $a0)
-    move $s3, $a1 # copy parameter $a1 into $s3 (save $a1)
-
-Outer loop
-    move $s0, $zero# i = 0
-    for1tst:slt $t0, $s0,$s3 #reg$t0=0if$s0Š$s3(iŠn)
-    beq $t0, $zero, exit1# go to exit1 if $s0 Š $s3 (i Š n)
-
-Inner loop
-    addi $s1, $s0, –1#j=i–1
-    for2tst:
-        slti $t0, $s1,0 #reg$t0=1if$s1<0(j<0)
-        bne $t0, $zero, exit2# go to exit2 if $s1 < 0 (j < 0)
-        sll $t1, $s1, 2# reg $t1=j*4
-        add $t2, $s2, $t1# reg $t2 = v + (j * 4)
-        lw $t3, 0($t2)# reg $t3 = v[j]
-        lw $t4, 4($t2)# reg $t4 = v[j + 1]
-        slt $t0, $t4, $t3 # reg $t0 = 0 if $t4 Š $t3
-        beq $t0, $zero, exit2# go to exit2 if $t4 Š $t3
-
-Pass parameters and call
-    move $a0, $s2 # 1st parameter of swap is v (old $a0)
-    move $a1, $s1 # 2nd parameter of swap is j
-    jal swap # swap code shown in Figure 2.25
-Inner loop 
-    addi $s1, $s1, –1# j –= 1
-    j for2tst # jump to test of inner loop
-
-Outer loop 
-    exit2: 
-        addi $s0, $s0, 1 # i += 1
-        j for1tst # jump to test of outer loop
-Restoring registers
-exit1: 
-    lw $s0, 0($sp) # restore $s0 from stack
-    lw $s1, 4($sp)# restore $s1 from stack
-    lw $s2, 8($sp)# restore $s2 from stack
-    lw $s3,12($sp) # restore $s3 from stack
-    lw $ra,16($sp) # restore $ra from stack
-    addi $sp,$sp, 20 # restore stack pointer
-Procedure return
-    jr $ra # return to calling routine
-
-"""
-
 from MIPS import MIPS
 import argparse
 import sys
@@ -66,19 +7,13 @@ import sys
 
 if __name__ == "__main__":
     
-    
-    #TODO: build a working logic with mem
-    #      inst_exec works fine almost %90
-    #TODO: PC
-    #TODO: functions and labels
-    #TODO: addresses must be decimal in order to build the instr
-
     mips = MIPS()
 
     parser = argparse.ArgumentParser()
-
     parser.add_argument("-f", "--file", dest="file",help="File name for the assembler")
     parser.add_argument("-i", "--interactive", dest="interactive", help="Interactive mode",action='store_true')
+    parser.add_argument("-o", "--output", dest="out_file", help="Output file")
+    parser.add_argument("-fmt","--format",dest="format",help="Output format")
 
     args = parser.parse_args()
 
@@ -89,14 +24,25 @@ if __name__ == "__main__":
     if args.interactive == True:
         mips.interactive()
     else:
-        mips.load_file(args.file)
-        i = mips.inst_build("add $t1 $t2 $t3")
-        i_hex, i_bin = mips.assemble(i)
+        raw_instr = mips.load_file(args.file) #loads file into memory
+        print "{} Raw instructions".format(mips.success)
+        for inst in raw_instr:
+            print "Instruction: {}".format(inst)
+            _hex,_bin = mips.inst_assemble(mips.inst_build(inst))
+            print "Hex: {}\nBin: {}".format(_hex,_bin)
         mips.info_memory()
-        #mips.exec_memory()
+        mips.exec_memory()
         mips.info_registers()
-
-
+    
+    if args.out_file != None:
+        fw = open(args.out_file,"w")
+        for inst in raw_instr:
+            _hex,_bin = mips.inst_assemble(mips.inst_build(inst))
+            if args.format == 'hex':
+                fw.write("{}\n".format(_hex))
+            else:
+                fw.write("{}\n".format(_bin))
+        fw.close
         #print "Hex: {}\nBin: {}".format(i_hex, i_bin)
 
 
@@ -121,7 +67,6 @@ if __name__ == "__main__":
     mips.info_registers()
     raw_input
     """
-
 
 
     """

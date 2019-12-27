@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-import parser
-
-
 class MIPS:
 
     def __init__(self):
@@ -10,7 +7,6 @@ class MIPS:
         self.MEM_START = 0x80001000
         self.MEM = {}
         self.PC = 0x0
-
 
         self.special_registers = {
             '$HI': 0x0,
@@ -90,6 +86,107 @@ class MIPS:
         self.info = "\033[94m[*]\033[97m"
 
         return
+
+    def check_exception(self, inst_line):
+        inst_line = inst_line.split(" ") # ["add","$t0","$s1","10"]
+        skeleton = self.inst_parse(inst_line[0])
+        if skeleton[0] == 'r':
+            if inst_line[0] == 'jr':
+                #jr $s
+                #0000 00ss sss0 0000 0000 0000 0000 1000
+                skeleton[skeleton.index('rd')] = "0x0"
+                skeleton[skeleton.index('rs')] = hex(self.registers[inst_line[1]])
+                skeleton[skeleton.index('rt')] = "0x0"
+                skeleton[skeleton.index('shamt')] = "0x0" #shamt val, useless at this point
+                return skeleton
+            if inst_line[0] == 'div':
+                #div $s, $t
+                #0000 00ss ssst tttt 0000 0000 0001 1010
+                skeleton[skeleton.index('rd')] = "0x0"
+                skeleton[skeleton.index('rs')] = hex(self.registers[inst_line[1]])
+                skeleton[skeleton.index('rt')] = hex(self.registers[inst_line[2]])
+                skeleton[skeleton.index('shamt')] = "0x0" #shamt val, useless at this point
+                return skeleton
+            if inst_line[0] == 'divu':
+                skeleton[skeleton.index('rd')] = "0x0"
+                skeleton[skeleton.index('rs')] = hex(self.registers[inst_line[1]])
+                skeleton[skeleton.index('rt')] = hex(self.registers[inst_line[2]])
+                skeleton[skeleton.index('shamt')] = "0x0" #shamt val, useless at this point
+                return skeleton
+            if inst_line[0] == 'mfhi':
+                #mfhi $d
+                #0000 0000 0000 0000 dddd d000 0001 0010
+                skeleton[skeleton.index('rd')] = hex(self.registers[inst_line[1]])
+                skeleton[skeleton.index('rs')] = "0x0"
+                skeleton[skeleton.index('rt')] = "0x0"
+                skeleton[skeleton.index('shamt')] = "0x0"
+                return skeleton
+            if inst_line[0] == 'mflo':
+                #mflo $d
+                #0000 0000 0000 0000 dddd d000 0001 0010
+                skeleton[skeleton.index('rd')] = hex(self.registers[inst_line[1]])
+                skeleton[skeleton.index('rs')] = "0x0"
+                skeleton[skeleton.index('rt')] = "0x0"
+                skeleton[skeleton.index('shamt')] = "0x0"
+                return skeleton
+            if inst_line[0] == 'sll':
+                #sll $d, $t, h
+                #0000 0000 0000 0000 dddd d000 0001 0010
+                #0000 00ss ssst tttt dddd dhhh hh00 0000
+                skeleton[skeleton.index('rs')] = hex(self.registers[inst_line[2]])
+                skeleton[skeleton.index('rt')] = "0x0"
+                skeleton[skeleton.index('rd')] = hex(self.registers[inst_line[1]])
+                skeleton[skeleton.index('shamt')] = hex(int(inst_line[3]))
+                return skeleton
+            
+
+        if skeleton[0] == 'i':
+            if inst_line[0] == 'lb':
+                #lb
+                #1000 00ss ssst tttt iiii iiii iiii iiii
+                # lb $t0 8($s1)
+                # ["lb","$t0","8($s1)"]
+                skeleton[skeleton.index('rt')] = hex(self.registers[inst_line[1]])
+                skeleton[skeleton.index('rs')] = hex(self.registers[inst_line[2].split("(")[1].replace(")","")])
+                skeleton[skeleton.index('imm')] = hex(int(inst_line[2].split("(")[0]))
+                return skeleton
+
+            if inst_line[0] == 'lui':
+                #lui
+                # lui $t, imm
+                #0011 11-- ---t tttt iiii iiii iiii iiii
+                skeleton[skeleton.index('rt')] = hex(self.registers[inst_line[1]])
+                skeleton[skeleton.index('rs')] = ""
+                skeleton[skeleton.index('imm')] = hex(int(inst_line[2],16))
+                return skeleton          
+            
+            if inst_line[0] == 'lw':
+                #lw
+                skeleton[skeleton.index('rt')] = hex(self.registers[inst_line[1]])
+                skeleton[skeleton.index('rs')] = hex(self.registers[inst_line[2].split("(")[1].replace(")","")])
+                skeleton[skeleton.index('imm')] = hex(int(inst_line[2].split("(")[0]))
+                return skeleton
+                
+            if inst_line[0] == 'sw':
+                # sw
+                # sw $t, offset($s)
+                # 1010 11ss ssst tttt iiii iiii iiii iiii
+                skeleton[skeleton.index('rt')] = hex(self.registers[inst_line[1]])
+                skeleton[skeleton.index('rs')] = hex(self.registers[inst_line[2].split("(")[1].replace(")","")])
+                skeleton[skeleton.index('imm')] = hex(int(inst_line[2].split("(")[0]))
+                return skeleton
+
+            if inst_line[0] == 'sb':
+                # sb
+                # sb $t, offset($s)
+                # 1010 11ss ssst tttt iiii iiii iiii iiii
+                skeleton[skeleton.index('rt')] = hex(self.registers[inst_line[1]])
+                skeleton[skeleton.index('rs')] = hex(self.registers[inst_line[2].split("(")[1].replace(")","")])
+                skeleton[skeleton.index('imm')] = hex(int(inst_line[2].split("(")[0]))
+                return skeleton
+
+        return False
+    
     def inst_parse(self,inst):
         # returns a list for a given instruction name
         # http://www.mrc.uidaho.edu/mrc/people/jff/digital/MIPSir.html
@@ -151,107 +248,6 @@ class MIPS:
         }
         return self.inst_table[inst]
 
-    def check_exception(self, inst_line):
-        inst_line = inst_line.split(" ") # ["add","$t0","$s1","10"]
-        skeleton = self.inst_parse(inst_line[0])
-        if skeleton[0] == 'r':
-            if inst_line[0] == 'jr':
-                #jr $s
-                #0000 00ss sss0 0000 0000 0000 0000 1000
-                skeleton[skeleton.index('rd')] = "0x0"
-                skeleton[skeleton.index('rs')] = hex(self.registers[inst_line[1]])
-                skeleton[skeleton.index('rt')] = "0x0"
-                skeleton[skeleton.index('shamt')] = "0x0" #shamt val, useless at this point
-                return skeleton
-            if inst_line[0] == 'div':
-                #div $s, $t
-                #0000 00ss ssst tttt 0000 0000 0001 1010
-                skeleton[skeleton.index('rd')] = "0x0"
-                skeleton[skeleton.index('rs')] = hex(self.registers[inst_line[1]])
-                skeleton[skeleton.index('rt')] = hex(self.registers[inst_line[2]])
-                skeleton[skeleton.index('shamt')] = "0x0" #shamt val, useless at this point
-                return skeleton
-            if inst_line[0] == 'divu':
-                skeleton[skeleton.index('rd')] = "0x0"
-                skeleton[skeleton.index('rs')] = hex(self.registers[inst_line[1]])
-                skeleton[skeleton.index('rt')] = hex(self.registers[inst_line[2]])
-                skeleton[skeleton.index('shamt')] = "0x0" #shamt val, useless at this point
-                return skeleton
-            if inst_line[0] == 'mfhi':
-                #mfhi $d
-                #0000 0000 0000 0000 dddd d000 0001 0010
-                skeleton[skeleton.index('rd')] = hex(self.registers[inst_line[1]])
-                skeleton[skeleton.index('rs')] = "0x0"
-                skeleton[skeleton.index('rt')] = "0x0"
-                skeleton[skeleton.index('shamt')] = "0x0"
-                return skeleton
-            if inst_line[0] == 'mflo':
-                #mflo $d
-                #0000 0000 0000 0000 dddd d000 0001 0010
-                skeleton[skeleton.index('rd')] = hex(self.registers[inst_line[1]])
-                skeleton[skeleton.index('rs')] = "0x0"
-                skeleton[skeleton.index('rt')] = "0x0"
-                skeleton[skeleton.index('shamt')] = "0x0"
-                return skeleton
-            if inst_line[0] == 'sll':
-                #sll $d, $t, h
-                #0000 0000 0000 0000 dddd d000 0001 0010
-                #0000 00ss ssst tttt dddd dhhh hh00 0000
-                skeleton[skeleton.index('rs')] = hex(self.registers[inst_line[2]])
-                skeleton[skeleton.index('rt')] = "0x0"
-                skeleton[skeleton.index('rd')] = hex(self.registers[inst_line[1]])
-                skeleton[skeleton.index('shamt')] = hex(int(inst_line[3]))
-                return skeleton
-            
-
-
-        if skeleton[0] == 'i':
-            if inst_line[0] == 'lb':
-                #lb
-                #1000 00ss ssst tttt iiii iiii iiii iiii
-                # lb $t0 8($s1)
-                # ["lb","$t0","8($s1)"]
-                skeleton[skeleton.index('rt')] = hex(self.registers[inst_line[1]])
-                skeleton[skeleton.index('rs')] = hex(self.registers[inst_line[2].split("(")[1].replace(")","")])
-                skeleton[skeleton.index('imm')] = hex(int(inst_line[2].split("(")[0]))
-                return skeleton
-
-            if inst_line[0] == 'lui':
-                #lui
-                # lui $t, imm
-                #0011 11-- ---t tttt iiii iiii iiii iiii
-                skeleton[skeleton.index('rt')] = hex(self.registers[inst_line[1]])
-                skeleton[skeleton.index('rs')] = ""
-                skeleton[skeleton.index('imm')] = hex(int(inst_line[2],16))
-                return skeleton          
-            
-            if inst_line[0] == 'lw':
-                #lw
-                skeleton[skeleton.index('rt')] = hex(self.registers[inst_line[1]])
-                skeleton[skeleton.index('rs')] = hex(self.registers[inst_line[2].split("(")[1].replace(")","")])
-                skeleton[skeleton.index('imm')] = hex(int(inst_line[2].split("(")[0]))
-                return skeleton
-                
-            if inst_line[0] == 'sw':
-                # sw
-                # sw $t, offset($s)
-                # 1010 11ss ssst tttt iiii iiii iiii iiii
-                skeleton[skeleton.index('rt')] = hex(self.registers[inst_line[1]])
-                skeleton[skeleton.index('rs')] = hex(self.registers[inst_line[2].split("(")[1].replace(")","")])
-                skeleton[skeleton.index('imm')] = hex(int(inst_line[2].split("(")[0]))
-                return skeleton
-
-            if inst_line[0] == 'sb':
-                # sb
-                # sb $t, offset($s)
-                # 1010 11ss ssst tttt iiii iiii iiii iiii
-                skeleton[skeleton.index('rt')] = hex(self.registers[inst_line[1]])
-                skeleton[skeleton.index('rs')] = hex(self.registers[inst_line[2].split("(")[1].replace(")","")])
-                skeleton[skeleton.index('imm')] = hex(int(inst_line[2].split("(")[0]))
-                return skeleton
-
-        return False
-
     def inst_build(self,inst_line):
         # build instruction with only hex values
         _inst = self.check_exception(inst_line)
@@ -278,13 +274,10 @@ class MIPS:
 
         if skeleton[0] == 'j':
             skeleton[skeleton.index('addr')] = (inst_line[1])
-        return skeleton
+        return skeleton   
     
-    
-    def assemble(self,inst):
-        # converts a full hex instruction to binary
-        # note that it won't have type in it after assembledd
-        # in other words 1st element will be gone 
+    def inst_assemble(self,inst):
+        # converts a full hex instruction to binary and hex value and returns them
         inst_type = inst[0]
         _tmp = inst
         inst =  [self.hex2bin(i) for i in inst[1::]] # ['r', '0x00', '0x0', '0x0', '0xa', '0x0', '0x20']
@@ -304,11 +297,12 @@ class MIPS:
                 _tmp[-1] = -1 * int(_tmp[-1].replace('-0x',''),16) # a cheesy solution :(
                 inst[3] = self.twos_complement(_tmp[-1],16).rjust(16,"0")
             else:
-                inst[3] = self.twos_complement(int(inst[3])).rjust(16,"0")
+                inst[3] = inst[3].rjust(16,"0")
 
         if inst_type[0] == 'j':
             inst[0] = inst[0].rjust(6,"0")
-            inst[1] = self.twos_complement(int(inst[1])).rjust(26,"0")
+            inst[1] = inst[1].rjust(26,"0")
+            #self.twos_complement(int(inst[1])).rjust(26,"0")
 
         _hex = self.bin2hex("".join(i for i in inst))
         _bin = "".join(i for i in inst)
@@ -371,12 +365,12 @@ class MIPS:
             if inst[-1] == '0x2A':
                 #SLT
                 #If $s is less than $t, $d is set to one. It gets zero otherwise.
-                self.register_mem[int(inst[4],16)] = self.register_mem[int(inst[2],16)] if self.register_mem[int(inst[2],16)] < self.register_mem[int(inst[3],16)] else 0x0
+                self.register_mem[int(inst[4],16)] = 0x1 if self.register_mem[int(inst[2],16)] < self.register_mem[int(inst[3],16)] else 0x0
 
             if inst[-1] == '0x2B':
                 #SLTU
                 #If $s is less than $t, $d is set to one. It gets zero otherwise.
-                self.register_mem[int(inst[4],16)] = self.register_mem[int(inst[2],16)] if self.register_mem[int(inst[2],16)] < self.register_mem[int(inst[3],16)] else 0x0
+                self.register_mem[int(inst[4],16)] = 0x1 if self.register_mem[int(inst[2],16)] < self.register_mem[int(inst[3],16)] else 0x0
 
             if inst[-1] == '0x1A':
                 #DIV
@@ -441,9 +435,9 @@ class MIPS:
                 #0001 00ss ssst tttt iiii iiii iiii iiii
                 if self.register_mem[int(inst[3],16)] == self.register_mem[int(inst[2],16)]:
                     # jump int(inst[4],16)
-                    pass
+                    self.PC == inst[3]
                 else:
-                    pass
+                    self.PC == "0x0"
 
             if inst[1] == '0x05':   
                 #bne
@@ -470,7 +464,6 @@ class MIPS:
                 #The immediate value is shifted left 16 bits and stored in the register. The lower 16 bits are zeroes
                 # lui $t, imm
                 #0011 11-- ---t tttt iiii iiii iiii iiii
-                print inst
                 self.register_mem[int(inst[3],16)] = int(inst[4],16) << 16
                 
             if inst[1] == '0x23':      
@@ -511,14 +504,17 @@ class MIPS:
                 # j target
                 # PC = nPC; nPC = (PC & 0xf0000000) | (target << 2);
                 # Jumps to the calculated address
-                print inst
+                self.PC = inst[2]
+
+
             if inst[1] == '0x03':   
                 # jal
                 # jumps to the calculated address and stores the return address in $31
                 # jal target
                 # 0000 11ii iiii iiii iiii iiii iiii iiii
                 # $31 = PC + 8 (or nPC + 4); PC = nPC; nPC = (PC & 0xf0000000) | (target << 2);
-                print inst
+                self.PC = inst[2]
+
         return 
 
     def bin2hex(self,val):
@@ -526,35 +522,42 @@ class MIPS:
     
     def hex2bin(self,val):
         return bin(int(val, 16))[2:]
-    
-    
-    def info_registers(self):
-        print "\n{} Registers".format(self.success)
-        for reg, val in sorted(self.registers.items(), key=lambda x: x[1]):
-            print "{} : {}".format(reg,hex(self.register_mem[val]))
-
-        print "\n{} Special Registers".format(self.success)
-        for reg, val in sorted(self.special_registers.items(), key=lambda x: x[1]):
-            print "{} : {}".format(reg,val)
-        return
-    
+       
     def interactive(self):
+        print "There is no memory in this mode"
         print "Enter q to exit interactive mode \n"
         print "Enter r to see the register information\n"
-        cmd = ""
+        cmd = raw_input("~#:")
         while(cmd != 'q'):
-            cmd = raw_input("~#:")
             if cmd == 'r':
                 self.info_registers()
+                cmd = raw_input("~#:")
                 continue
-            i = self.inst_build(cmd)
-            self.inst_exec(i)
+            try:
+                i = self.inst_build(cmd)
+                _hex, _bin = self.inst_assemble(i)
+                print "Instruction build\nHex value: {}\nBinary value: {}".format(_hex,_bin)
+                self.inst_exec(i)
+                print "Executed the instruction" 
+
+            except KeyError:
+                print "You have probably entered a wrong instruction, please check your instruction"
+            except ValueError:
+                print "You have something wrong with your syntax"
+            except TypeError:
+                print "You have something wrong with your syntax"
+
+            cmd = raw_input("~#:")
+            
         return 
 
     def load_file(self,file_name):
+        #loads file to memory and returns list of instruction
         f = open(file_name, "r")
         #['sort: \n', '    addi $sp,$sp, -20 # make room on stack for 5 registers\n', '    sw $ra, 16($sp)# save $ra on stack\n', '    sw $s3,12($sp) # save $s3 on stack\n', '    sw $s2, 8($sp)# save $s2 on stack\n', '    sw $s1, 4($sp)# save $s1 on stack\n', '    sw $s0, 0($sp)# save $s0 on stack\n', '\n']   
         raw_instr = []
+    
+        #load file into memory
         self.MEM[self.MEM_START] = 0x0 
         _mem_counter = 0x0
         for line in f:
@@ -562,6 +565,7 @@ class MIPS:
             self.MEM[self.MEM_START+_mem_counter] = _line
             _mem_counter += 0x4
 
+        # replace addresses with labels    
         for outer_addr, outer_inst in self.MEM.items():
             if ':' in outer_inst:
                 for inner_addr, inner_inst in self.MEM.items():
@@ -574,12 +578,6 @@ class MIPS:
         self.info_memory()
         f.close()
 
-
-        print "\n\nRAW INSTRUCTIONS"
-        for inst in raw_instr:
-            print "Instruction: {}".format(inst)
-            _hex,_bin = self.assemble(self.inst_build(inst))
-            print "Hex: {}\nBin: {}".format(_hex,_bin)
         return raw_instr
 
     def info_memory(self):
@@ -588,9 +586,22 @@ class MIPS:
             print "{} : {}".format(hex(address),val)
         return
 
-    def exec_mem(self):
+    def info_registers(self):
+        print "\n{} Registers".format(self.success)
+        for reg, val in sorted(self.registers.items(), key=lambda x: x[1]):
+            print "{} : {}".format(reg,hex(self.register_mem[val]))
+
+        print "\n{} Special Registers".format(self.success)
+        for reg, val in sorted(self.special_registers.items(), key=lambda x: x[1]):
+            print "{} : {}".format(reg,val)
+        return
+
+    def exec_memory(self):
         self.PC = self.MEM_START            
         for address, inst in self.MEM.items():
             self.PC = address
-            self.inst_exec(inst)
+            if ':' in inst:
+                continue
+            else:
+                self.inst_exec(self.inst_build(inst))
         return
