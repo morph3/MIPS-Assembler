@@ -1,26 +1,6 @@
 # -*- coding: utf-8 -*-
 
 """
-Write a simple assembler to convert any MIPS assembly program containing some of the main 
-MIPS instructions to hexadecimal machine language or object code. 
-
-A list of these instructions can be found in Fig. 2.27 (Page 139) of the textbook 5th Edition. (Below)
- 
-Your assembler should also be able to handle the pseudo-instructions provided in the same figure. 
-
-Assume the first line of the code is stored at MIPS memory location
-0x80001000. 
-The solution should support an interactive mode and a batch mode.
-The interactive mode reads an instruction from command line, assembles it to hexadecial, and outputs the result
-to the screen. 
-The batch mode reads a source file with extension .src, assembles to hexadecimal,
-and outputs the result to an object code file with extension .obj.
-
-Note: You can verify your results using a MIPS simulator from a version of the textbook or one of
-the online MIPS simulator tools.
-
-"""
-"""
 
 Saving Registers
 sort: 
