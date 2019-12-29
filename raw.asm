@@ -17,4 +17,4 @@ sort:
         beq $t0, $zero, exit2# go to exit2 if $t4 Š $t3
 exit2: 
     addi $s0, $s0, 1 # i += 1
-    j for2tst # jump to test of outer loop
+    j for2tst
