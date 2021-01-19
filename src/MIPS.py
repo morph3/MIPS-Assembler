@@ -548,7 +548,7 @@ class MIPS:
             try:
                 i = self.inst_build(cmd)
                 _backup_i = i.copy() #copy it
-                self.logger.success(f"Instruction build {i}")
+                #self.logger.success(f"Instruction build {i}")
                 _hex, _bin = self.inst_assemble(i)
                 self.logger.success(f"Instruction assembled\nHex value: {_hex}\nBinary value: {_bin}")
                 self.inst_exec(_backup_i)
