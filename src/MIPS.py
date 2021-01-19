@@ -1,7 +1,21 @@
 # -*- coding: utf-8 -*-
+import sys
+class Logger:
+    def __init__(self):
+        self.green = "\033[92m[*]\033[97m"
+        self.blue = "\033[94m[*]\033[97m"
+        self.reset = "\033[0;0m"
+    def success(self,msg):
+        sys.stdout.write(f"{self.green}{msg}\n")
+    def info(self,msg):
+        sys.stdout.write(f"{self.blue}{msg}\n")
+    def out(self,msg):
+        sys.stdout.write(f"{msg}\n")
+
 class MIPS:
 
     def __init__(self):
+        self.logger = Logger()
         self.twos_complement = lambda x, count=8: "".join(map(lambda y:str((x>>y)&1), range(count-1, -1, -1)) )
 
         self.MEM_START = 0x80001000
@@ -82,8 +96,6 @@ class MIPS:
             0x1f : 0,            
         }
 
-        self.success = "\033[92m[*]\033[97m"
-        self.info = "\033[94m[*]\033[97m"
 
         return
 
@@ -294,7 +306,7 @@ class MIPS:
             inst[1] = inst[1].rjust(5,"0")
             inst[2] = inst[2].rjust(5,"0")
             if '-' in _tmp[-1]:
-                _tmp[-1] = -1 * int(_tmp[-1].replace('-0x',''),16) # a cheesy solution :(
+                _tmp[-1] = -1 * int(_tmp[-1].replace('-0x',''),16)
                 inst[3] = self.twos_complement(_tmp[-1],16).rjust(16,"0")
             else:
                 inst[3] = inst[3].rjust(16,"0")
@@ -524,30 +536,31 @@ class MIPS:
         return bin(int(val, 16))[2:]
        
     def interactive(self):
-        print "There is no memory in this mode"
-        print "Enter q to exit interactive mode \n"
-        print "Enter r to see the register information\n"
-        cmd = raw_input("~#:")
+
+        self.logger.info("There is no memory in this mode")
+        self.logger.info("Enter q to exit interactive mode")
+        self.logger.info("Enter r to see the register information")
+        cmd = str(input("~#:"))
         while(cmd != 'q'):
             if cmd == 'r':
                 self.info_registers()
-                cmd = raw_input("~#:")
+                cmd = str(input("~#:"))
                 continue
             try:
                 i = self.inst_build(cmd)
                 _hex, _bin = self.inst_assemble(i)
-                print "Instruction build\nHex value: {}\nBinary value: {}".format(_hex,_bin)
+                self.logger.success(f"Instruction build\nHex value: {_hex}\nBinary value: {_bin}")
                 self.inst_exec(i)
-                print "Executed the instruction" 
+                self.logger.success("Executed the instruction")
 
             except KeyError:
-                print "You have probably entered a wrong instruction, please check your instruction"
+                self.logger.info("You have probably entered a wrong instruction, please check your instruction")
             except ValueError:
-                print "You have something wrong with your syntax"
+                self.logger.info("You have something wrong with your syntax")
             except TypeError:
-                print "You have something wrong with your syntax"
+                self.logger.info("You have something wrong with your syntax")
 
-            cmd = raw_input("~#:")
+            cmd = str(input("~#:"))
             
         return 
 
@@ -581,19 +594,21 @@ class MIPS:
         return raw_instr
 
     def info_memory(self):
-        print "\n{} Memory".format(self.success)
+        
+        self.logger.success("Memory")
         for address, val in sorted(self.MEM.items(), key=lambda x: x[0]):
-            print "{} : {}".format(hex(address),val)
+            self.logger.out(f"{hex(address)} : {val}")
         return
 
     def info_registers(self):
-        print "\n{} Registers".format(self.success)
+        self.logger.success("Registers")
         for reg, val in sorted(self.registers.items(), key=lambda x: x[1]):
-            print "{} : {}".format(reg,hex(self.register_mem[val]))
+            self.logger.out(f"{reg} : {hex(self.register_mem[val])}")
 
-        print "\n{} Special Registers".format(self.success)
+        self.logger.success("Special Registers")
         for reg, val in sorted(self.special_registers.items(), key=lambda x: x[1]):
-            print "{} : {}".format(reg,val)
+            self.logger.out(f"{reg} : {val}")
+
         return
 
     def exec_memory(self):
