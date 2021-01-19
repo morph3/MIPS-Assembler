@@ -277,8 +277,8 @@ class MIPS:
         if skeleton[0] == 'i':
             #addi $t, $s, imm
             #0010 00ss ssst tttt iiii iiii iiii iiii
-            skeleton[skeleton.index('rs')] = hex(self.registers[inst_line[2]])
-            skeleton[skeleton.index('rt')] = hex(self.registers[inst_line[1]])
+            skeleton[skeleton.index('rs')] = hex(int(self.registers[inst_line[2]]))
+            skeleton[skeleton.index('rt')] = hex(int(self.registers[inst_line[1]]))
             if 'x' in inst_line[3]:
                 skeleton[skeleton.index('imm')] = inst_line[3]
             else:
@@ -540,16 +540,17 @@ class MIPS:
         self.logger.info("There is no memory in this mode")
         self.logger.info("Enter q to exit interactive mode")
         self.logger.info("Enter r to see the register information")
-        cmd = str(input("~#:"))
+        cmd = input("~#: ").strip()
         while(cmd != 'q'):
             if cmd == 'r':
                 self.info_registers()
-                cmd = str(input("~#:"))
+                cmd = input("~#: ").strip()
                 continue
             try:
                 i = self.inst_build(cmd)
+                self.logger.success(f"Instruction build {i}")
                 _hex, _bin = self.inst_assemble(i)
-                self.logger.success(f"Instruction build\nHex value: {_hex}\nBinary value: {_bin}")
+                self.logger.success(f"Instruction assembled\nHex value: {_hex}\nBinary value: {_bin}")
                 self.inst_exec(i)
                 self.logger.success("Executed the instruction")
 
@@ -557,8 +558,8 @@ class MIPS:
                 self.logger.info("You have probably entered a wrong instruction, please check your instruction")
             except ValueError:
                 self.logger.info("You have something wrong with your syntax")
-            except TypeError:
-                self.logger.info("You have something wrong with your syntax")
+#            except TypeError:
+#                self.logger.info("type err ? You have something wrong with your syntax")
 
             cmd = str(input("~#:"))
             
