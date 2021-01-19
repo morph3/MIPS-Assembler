@@ -201,7 +201,6 @@ class MIPS:
     
     def inst_parse(self,inst):
         # returns a list for a given instruction name
-        # http://www.mrc.uidaho.edu/mrc/people/jff/digital/MIPSir.html
         # https://www.d.umn.edu/~gshute/mips/itype.xhtml
         # https://www.d.umn.edu/~gshute/mips/rtype.xhtml
         # https://www.d.umn.edu/~gshute/mips/jtype.xhtml
@@ -548,20 +547,21 @@ class MIPS:
                 continue
             try:
                 i = self.inst_build(cmd)
+                _backup_i = i.copy() #copy it
                 self.logger.success(f"Instruction build {i}")
                 _hex, _bin = self.inst_assemble(i)
                 self.logger.success(f"Instruction assembled\nHex value: {_hex}\nBinary value: {_bin}")
-                self.inst_exec(i)
+                self.inst_exec(_backup_i)
                 self.logger.success("Executed the instruction")
 
             except KeyError:
                 self.logger.info("You have probably entered a wrong instruction, please check your instruction")
             except ValueError:
                 self.logger.info("You have something wrong with your syntax")
-#            except TypeError:
-#                self.logger.info("type err ? You have something wrong with your syntax")
+            except TypeError:
+                self.logger.info("You have something wrong with your syntax")
 
-            cmd = str(input("~#:"))
+            cmd = input("~#: ").strip()
             
         return 
 
